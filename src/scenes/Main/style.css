@@ -1,0 +1,12 @@
+.button {
+    background: green !important;
+    color: white !important;
+    border: 1px white solid !important;
+    border-radius: 40px !important;
+    padding: 10px 25px !important;
+    font-size: 30px !important;
+}
+
+.spotify-icon {
+    margin-right: 10px;
+}
