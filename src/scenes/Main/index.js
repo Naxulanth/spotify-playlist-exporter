@@ -66,7 +66,7 @@ class Main extends Component {
   };
 
   extractTracks = async token => {
-    const { playlists, tracks } = this.state;
+    const { playlists } = this.state;
     this.setState({
       extractingTracks: true
     });
@@ -89,9 +89,9 @@ class Main extends Component {
       extracted = response.data.items;
       tempPlaylists = tempPlaylists.concat(extracted);
       this.setState({
-        playlists: tempPlaylists.slice(0, 3)
+        playlists: tempPlaylists
       });
-    } while (false);
+    } while (extracted.length === 50);
     this.setState({
       extractingPlaylists: false
     });
@@ -113,12 +113,23 @@ class Main extends Component {
     flattened = _.uniq(flattened, v => [v.track, v.artist].join());
     parseAsync(flattened, fields).then(csv => {
       this.setState({
-        exported: true
+        exported: true,
+        csv: csv
       });
     });
   };
 
-  download = () => {};
+  download = () => {
+    const { csv } = this.state;
+    let filename = "spotify_export.csv";
+    let tempCsv = csv;
+    tempCsv = "data:text/csv;charset=utf-8," + tempCsv;
+    let data = encodeURI(tempCsv);
+    let link = document.createElement("a");
+    link.setAttribute("href", data);
+    link.setAttribute("download", filename);
+    link.click();
+  };
 
   render() {
     const {
