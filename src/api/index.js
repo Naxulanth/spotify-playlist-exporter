@@ -15,13 +15,15 @@ export function getPlaylists(header, offset) {
   });
 }
 
-export function getTracks(header, playlist) {
+export function getTracks(header, playlist, offset) {
   return axios.request({
     method: "get",
-    url: BASE_URL + "v1/playlists/" + playlist + "/tracks",
+    url: BASE_URL + "playlists/" + playlist + "/tracks",
     headers: {
       Authorization: "Bearer " + header
     },
-    params: {}
+    params: {
+      offset: offset
+    }
   });
 }
