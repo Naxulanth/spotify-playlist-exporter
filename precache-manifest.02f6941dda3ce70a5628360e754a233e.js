@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "38429f9268d6c00debe38e9c6f66fada",
+    "revision": "a42b034358361fb9a77b91f5327152b4",
     "url": "/spotify-playlist-exporter/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/spotify-playlist-exporter/static/css/2.266e55a5.chunk.css"
   },
   {
-    "revision": "805d3f415fc493b16bac",
+    "revision": "658c675e7747de3ea7b4",
     "url": "/spotify-playlist-exporter/static/css/main.75b1aa25.chunk.css"
   },
   {
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/spotify-playlist-exporter/static/js/2.bfecffb0.chunk.js"
   },
   {
-    "revision": "805d3f415fc493b16bac",
-    "url": "/spotify-playlist-exporter/static/js/main.464bb9ac.chunk.js"
+    "revision": "658c675e7747de3ea7b4",
+    "url": "/spotify-playlist-exporter/static/js/main.b2849e59.chunk.js"
   },
   {
     "revision": "ce85774247f9818ec1b2",
