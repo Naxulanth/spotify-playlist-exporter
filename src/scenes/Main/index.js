@@ -124,7 +124,6 @@ class Main extends Component {
       });
     });
     let flattened = [].concat.apply([], temp);
-    console.log(flattened.length)
     flattened = _.uniqBy(flattened, v => [v.track, v.artist].join());
     parseAsync(flattened, fields).then(csv => {
       this.setState({
