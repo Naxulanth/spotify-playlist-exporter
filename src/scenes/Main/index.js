@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Row, Col, Button } from "reactstrap";
+import FileSaver from "file-saver";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { parseAsync } from "json2csv";
 import _ from "lodash";
@@ -49,16 +50,21 @@ class Main extends Component {
       let done = false;
       do {
         let playlistId = playlist.id;
-        let response = await getTracks(token, playlistId, this.offsetTracks);
-        extracted = response.data.items;
-        if (!tempTracks[playlistId]) tempTracks[playlistId] = [];
-        tempTracks[playlistId] = tempTracks[playlistId].concat(extracted);
-        this.offsetTracks += 100;
-        if (this.c === playlists.length - 1) done = true;
-        this.setState({
-          tracks: tempTracks,
-          completed: done
-        });
+        try {
+          let response = await getTracks(token, playlistId, this.offsetTracks);
+          extracted = response.data.items;
+          if (!tempTracks[playlistId]) tempTracks[playlistId] = [];
+          tempTracks[playlistId] = tempTracks[playlistId].concat(extracted);
+          this.offsetTracks += 100;
+          if (this.c === playlists.length - 1 && extracted.length !== 100)
+            done = true;
+          this.setState({
+            tracks: tempTracks,
+            completed: done
+          });
+        } catch (e) {
+          console.error(e);
+        }
       } while (extracted.length === 100);
       this.offsetTracks = 0;
       resolve();
@@ -84,14 +90,18 @@ class Main extends Component {
     let extracted = null;
     let tempPlaylists = playlists;
     do {
-      this.offset += 50;
-      let response = await getPlaylists(token, this.offset);
-      extracted = response.data.items;
-      tempPlaylists = tempPlaylists.concat(extracted);
-      this.setState({
-        playlists: tempPlaylists
-      });
-    } while (extracted.length === 50);
+      try {
+        this.offset += 50;
+        let response = await getPlaylists(token, this.offset);
+        extracted = response.data.items;
+        tempPlaylists = tempPlaylists.concat(extracted);
+        this.setState({
+          playlists: tempPlaylists.slice(0, 2)
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    } while (false);
     this.setState({
       extractingPlaylists: false
     });
@@ -103,32 +113,33 @@ class Main extends Component {
     const fields = ["track", "artist"];
     let temp = Object.keys(tracks).map(playlist => {
       return tracks[playlist].map(track => {
+        if (!track.track || !track.track.name) console.log(track);
         return {
-          track: track.track.name,
-          artist: track.track.artists[0].name
+          track: track.track && track.track.name,
+          artist:
+            track.track &&
+            track.track.artists &&
+            track.track.artists[0] &&
+            track.track.artists[0].name
         };
       });
     });
     let flattened = [].concat.apply([], temp);
     flattened = _.uniq(flattened, v => [v.track, v.artist].join());
     parseAsync(flattened, fields).then(csv => {
+      console.log(csv);
       this.setState({
         exported: true,
-        csv: csv
+        csv: csv,
+        flattenedTracks: flattened
       });
     });
   };
 
   download = () => {
     const { csv } = this.state;
-    let filename = "spotify_export.csv";
-    let tempCsv = csv;
-    tempCsv = "data:text/csv;charset=utf-8," + tempCsv;
-    let data = encodeURI(tempCsv);
-    let link = document.createElement("a");
-    link.setAttribute("href", data);
-    link.setAttribute("download", filename);
-    link.click();
+    let blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    FileSaver.saveAs(blob, "spotify_export.csv");
   };
 
   render() {
@@ -137,7 +148,8 @@ class Main extends Component {
       extractingTracks,
       playlists,
       tracks,
-      exported
+      exported,
+      flattenedTracks
     } = this.state;
     let acc = 0;
     Object.keys(tracks).forEach(playlist => (acc += tracks[playlist].length));
@@ -157,6 +169,7 @@ class Main extends Component {
             ? "Download"
             : "Export"}
         </Button>
+        <div style={{marginTop: "10px"}}>{exported ? flattenedTracks.length + " tracks exported!" : null}</div>
       </div>
     );
   }
