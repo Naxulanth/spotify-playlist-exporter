@@ -96,12 +96,12 @@ class Main extends Component {
         extracted = response.data.items;
         tempPlaylists = tempPlaylists.concat(extracted);
         this.setState({
-          playlists: tempPlaylists.slice(0, 2)
+          playlists: tempPlaylists
         });
       } catch (e) {
         console.error(e);
       }
-    } while (false);
+    } while (extracted.length === 50);
     this.setState({
       extractingPlaylists: false
     });
@@ -113,7 +113,6 @@ class Main extends Component {
     const fields = ["track", "artist"];
     let temp = Object.keys(tracks).map(playlist => {
       return tracks[playlist].map(track => {
-        if (!track.track || !track.track.name) console.log(track);
         return {
           track: track.track && track.track.name,
           artist:
@@ -125,9 +124,9 @@ class Main extends Component {
       });
     });
     let flattened = [].concat.apply([], temp);
-    flattened = _.uniq(flattened, v => [v.track, v.artist].join());
+    console.log(flattened.length)
+    flattened = _.uniqBy(flattened, v => [v.track, v.artist].join());
     parseAsync(flattened, fields).then(csv => {
-      console.log(csv);
       this.setState({
         exported: true,
         csv: csv,
@@ -169,7 +168,9 @@ class Main extends Component {
             ? "Download"
             : "Export"}
         </Button>
-        <div style={{marginTop: "10px"}}>{exported ? flattenedTracks.length + " tracks exported!" : null}</div>
+        <div style={{ marginTop: "10px" }}>
+          {exported ? flattenedTracks.length + " tracks exported!" : null}
+        </div>
       </div>
     );
   }
