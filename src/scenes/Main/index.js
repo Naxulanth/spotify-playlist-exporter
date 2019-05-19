@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { Row, Col, Button } from "reactstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { parseAsync } from "json2csv";
+import _ from "lodash";
 import { faSpotify } from "@fortawesome/free-brands-svg-icons";
 import { getPlaylists, getTracks } from "api";
 import { parse, authorize } from "utils";
@@ -13,10 +15,13 @@ class Main extends Component {
       extractingPlaylists: false,
       extractingTracks: false,
       tracks: {},
-      playlists: []
+      playlists: [],
+      completed: false,
+      exported: false
     };
     this.offset = 0;
     this.offsetTracks = 0;
+    this.c = 0;
   }
 
   componentDidMount() {
@@ -29,11 +34,19 @@ class Main extends Component {
     }
   }
 
+  componentDidUpdate() {
+    const { completed, exported } = this.state;
+    if (completed && !exported) {
+      this.toCsv();
+    }
+  }
+
   extractChunk = (token, playlist) => {
-    const { tracks } = this.state;
+    const { tracks, playlists } = this.state;
     let tempTracks = Object.assign({}, tracks);
     return new Promise(async (resolve, reject) => {
       let extracted = null;
+      let done = false;
       do {
         let playlistId = playlist.id;
         let response = await getTracks(token, playlistId, this.offsetTracks);
@@ -41,9 +54,10 @@ class Main extends Component {
         if (!tempTracks[playlistId]) tempTracks[playlistId] = [];
         tempTracks[playlistId] = tempTracks[playlistId].concat(extracted);
         this.offsetTracks += 100;
-        console.log(tempTracks);
+        if (this.c === playlists.length - 1) done = true;
         this.setState({
-          tracks: tempTracks
+          tracks: tempTracks,
+          completed: done
         });
       } while (extracted.length === 100);
       this.offsetTracks = 0;
@@ -52,12 +66,13 @@ class Main extends Component {
   };
 
   extractTracks = async token => {
-    const { playlists } = this.state;
+    const { playlists, tracks } = this.state;
     this.setState({
       extractingTracks: true
     });
     for (let playlist of playlists) {
       await this.extractChunk(token, playlist);
+      this.c++;
     }
     this.setState({
       extractingTracks: false
@@ -67,29 +82,51 @@ class Main extends Component {
   extractPlaylists = async token => {
     const { playlists } = this.state;
     let extracted = null;
-    let tempPlaylists = playlists.slice();
+    let tempPlaylists = playlists;
     do {
       this.offset += 50;
       let response = await getPlaylists(token, this.offset);
       extracted = response.data.items;
       tempPlaylists = tempPlaylists.concat(extracted);
-      console.log(tempPlaylists);
       this.setState({
-        playlists: tempPlaylists
+        playlists: tempPlaylists.slice(0, 3)
       });
-    } while (extracted.length === 50);
+    } while (false);
     this.setState({
       extractingPlaylists: false
     });
     this.extractTracks(token);
   };
 
+  toCsv = () => {
+    const { tracks } = this.state;
+    const fields = ["track", "artist"];
+    let temp = Object.keys(tracks).map(playlist => {
+      return tracks[playlist].map(track => {
+        return {
+          track: track.track.name,
+          artist: track.track.artists[0].name
+        };
+      });
+    });
+    let flattened = [].concat.apply([], temp);
+    flattened = _.uniq(flattened, v => [v.track, v.artist].join());
+    parseAsync(flattened, fields).then(csv => {
+      this.setState({
+        exported: true
+      });
+    });
+  };
+
+  download = () => {};
+
   render() {
     const {
       extractingPlaylists,
       extractingTracks,
       playlists,
-      tracks
+      tracks,
+      exported
     } = this.state;
     let acc = 0;
     Object.keys(tracks).forEach(playlist => (acc += tracks[playlist].length));
@@ -97,7 +134,7 @@ class Main extends Component {
       <div className="center">
         <Button
           disabled={extractingPlaylists || extractingTracks}
-          onClick={authorize}
+          onClick={exported ? this.download : authorize}
           className="button"
         >
           <FontAwesomeIcon className="spotify-icon" icon={faSpotify} />
@@ -105,6 +142,8 @@ class Main extends Component {
             ? "Extracting playlists... (" + playlists.length + ")"
             : extractingTracks
             ? "Extracting tracks... (" + acc + ")"
+            : exported
+            ? "Download"
             : "Export"}
         </Button>
       </div>
