@@ -91,10 +91,10 @@ class Main extends Component {
     let tempPlaylists = playlists;
     do {
       try {
-        this.offset += 50;
         let response = await getPlaylists(token, this.offset);
         extracted = response.data.items;
         tempPlaylists = tempPlaylists.concat(extracted);
+        this.offset += 50;
         this.setState({
           playlists: tempPlaylists
         });
